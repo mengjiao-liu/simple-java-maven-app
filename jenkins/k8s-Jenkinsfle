@@ -43,12 +43,11 @@ podTemplate(yaml: """
   node(POD_LABEL) {
     stage('Git') {
       git url: 'https://github.com/mengjiao-liu/simple-java-maven-app',
-          credentialsId: 'github',
           branch: 'master'
     }
 
     stage('Build') {
-      container('maven:3-alpine') {
+      container('maven') {
         sh '''
           sh 'mvn -B -DskipTests clean package'
         '''
@@ -65,7 +64,7 @@ podTemplate(yaml: """
 
 
     stage('Test') {
-      container('maven:3-alpine') {
+      container('maven') {
         sh '''
           sh 'mvn test'
         '''
