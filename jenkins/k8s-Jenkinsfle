@@ -1,0 +1,84 @@
+#!/usr/bin/env groovy
+
+/**
+ * This pipeline will build and deploy a Docker image with Kaniko
+ * https://github.com/GoogleContainerTools/kaniko
+ * without needing a Docker host
+ *
+ * You need to create a jenkins-docker-cfg secret with your docker config
+ * as described in
+ * https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#create-a-secret-in-the-cluster-that-holds-your-authorization-token
+ */
+
+podTemplate(yaml: """
+              kind: Pod
+              spec:
+                containers:
+                - name: maven
+                  image: maven:3-alpine
+                  imagePullPolicy: IfNotPresent
+                  command:
+                  - sleep
+                  args:
+                  - 99d
+                - name: golang
+                  image: golang:1.16
+                  command:
+                    - sleep
+                  args:
+                    - 99d
+                  env:
+                    - name: GOPROXY
+                      value: https://goproxy.cn
+                    - name: GO111MODULE
+                      value: 'on'
+                    - name: ALLURE_RESULTS_PATH
+                      value: /home/jenkins/agent/workspace/jenkins-ci
+                  envFrom:
+                    - secretRef:
+                        name: slack
+"""
+  ) {
+
+  node(POD_LABEL) {
+    stage('Git') {
+      git url: 'https://github.com/mengjiao-liu/simple-java-maven-app',
+          credentialsId: 'github',
+          branch: 'master'
+    }
+
+    stage('Build') {
+      container('maven:3-alpine') {
+        sh '''
+          sh 'mvn -B -DskipTests clean package'
+        '''
+      }
+    }
+
+        stage('Notification') {
+      container('golang') {
+        sh '''
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Java Maven Build passed"}' $SLACK_URL
+        '''
+      }
+    }
+
+
+    stage('Test') {
+      container('maven:3-alpine') {
+        sh '''
+          sh 'mvn test'
+        '''
+      }
+    }
+
+    stage('Notification') {
+      container('golang') {
+        sh '''
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Java Maven test passed."}' $SLACK_URL
+        '''
+      }
+    }
+
+  }
+}
