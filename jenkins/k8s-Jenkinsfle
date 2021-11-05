@@ -15,7 +15,7 @@ podTemplate(yaml: """
               spec:
                 containers:
                 - name: maven
-                  image: maven:3-alpine
+                  image: maven:3.5.4
                   imagePullPolicy: IfNotPresent
                   command:
                   - sleep
