@@ -11,7 +11,8 @@ spec:
       app: simple-java-maven-app
   template:
     metadata:
-      labels:simple-java-maven-appreviews
+      labels:
+        app: simple-java-maven-app
     spec:
       containers:
       - name: simple-java-maven-app
